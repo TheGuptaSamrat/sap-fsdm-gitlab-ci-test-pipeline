@@ -1,0 +1,124 @@
+name: SAP FSDM CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_sap_integration:
+        description: Run SAP integration flow with HANA and RFC endpoint access
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+env:
+  ENTITY_CONFIG: config/entities.csv
+  JOB_CONFIG: config/jobs.csv
+  VALIDATION_CONFIG: config/validations.csv
+  INPUT_DATA_DIR: data/input
+  EXPECTED_DATA_DIR: data/expected
+  RUN_ID: ${{ github.run_id }}
+  HANA_JDBC_DRIVER_CLASS: com.sap.db.jdbc.Driver
+  AUDIT_TABLE: ZCI_FSDM_FLOW_AUDIT
+  DRY_RUN: "false"
+
+jobs:
+  validate-config:
+    name: Validate configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Build harness
+        run: mvn -q -DskipTests package
+
+      - name: Validate CSV configuration
+        run: |
+          java -jar target/fsdm-ci-harness.jar validate-config \
+            --entities "$ENTITY_CONFIG" \
+            --jobs "$JOB_CONFIG" \
+            --validations "$VALIDATION_CONFIG" \
+            --input-dir "$INPUT_DATA_DIR" \
+            --expected-dir "$EXPECTED_DATA_DIR"
+
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Run unit tests
+        run: mvn -q test
+
+  sap-integration-flow:
+    name: SAP integration flow
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_sap_integration == 'true' }}
+    runs-on:
+      - self-hosted
+      - sap
+    env:
+      HANA_JDBC_URL: ${{ secrets.HANA_JDBC_URL }}
+      HANA_USER: ${{ secrets.HANA_USER }}
+      HANA_PASSWORD: ${{ secrets.HANA_PASSWORD }}
+      HANA_SCHEMA: ${{ secrets.HANA_SCHEMA }}
+      HANA_JDBC_DRIVER_JAR: ${{ vars.HANA_JDBC_DRIVER_JAR }}
+      HANA_JDBC_DRIVER_URL: ${{ secrets.HANA_JDBC_DRIVER_URL }}
+      RFC_HTTP_BASE_URL: ${{ secrets.RFC_HTTP_BASE_URL }}
+      RFC_HTTP_TOKEN: ${{ secrets.RFC_HTTP_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Validate required SAP settings
+        run: |
+          test -n "$HANA_JDBC_URL"
+          test -n "$HANA_USER"
+          test -n "$HANA_PASSWORD"
+          test -n "$RFC_HTTP_BASE_URL"
+          if [ -n "$HANA_JDBC_DRIVER_URL" ]; then
+            curl -fsSL "$HANA_JDBC_DRIVER_URL" -o ngdbc.jar
+            export HANA_JDBC_DRIVER_JAR="$PWD/ngdbc.jar"
+            echo "HANA_JDBC_DRIVER_JAR=$PWD/ngdbc.jar" >> "$GITHUB_ENV"
+          fi
+          test -n "$HANA_JDBC_DRIVER_JAR"
+
+      - name: Build harness
+        run: mvn -q -DskipTests package
+
+      - name: Run SAP FSDM flow
+        run: |
+          java -cp "target/fsdm-ci-harness.jar:${HANA_JDBC_DRIVER_JAR}" \
+            io.github.theguptasamrat.fsdmci.App run-flow \
+            --entities "$ENTITY_CONFIG" \
+            --jobs "$JOB_CONFIG" \
+            --validations "$VALIDATION_CONFIG" \
+            --input-dir "$INPUT_DATA_DIR" \
+            --expected-dir "$EXPECTED_DATA_DIR"

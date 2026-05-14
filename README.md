@@ -74,4 +74,5 @@ The repository includes a HANA DDL example for the audit table in `docs/hana-aud
 - `docs/implementation-plan.md`
 - `docs/configuration.md`
 - `docs/gitlab-setup.md`
+- `docs/github-actions-setup.md`
 - `docs/requirements-mapping.md`
