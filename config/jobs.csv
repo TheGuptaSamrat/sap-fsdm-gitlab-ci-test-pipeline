@@ -1,0 +1,7 @@
+sequence,stage_name,job_name,endpoint_path,PP_01,PP_02,PP_03,PP_04,PP_05,PP_06,PP_07,PP_08,PP_09,PP_10
+10,activate,Activate,/rfc/jobs,${RUN_ID},D_TO_A,,,,,,,,
+20,z30_rspc,Z30_RSPC,/rfc/jobs,${RUN_ID},Z30_CHAIN,,,,,,,,
+30,z40_rspc,Z40_RSPC,/rfc/jobs,${RUN_ID},Z40_CHAIN,,,,,,,,
+40,balance_snapshot,BALANCE_SNAPSHOT,/rfc/jobs,${RUN_ID},SNAPSHOT_DATE=${BUSINESS_DATE},,,,,,,,
+50,gai,GAI,/rfc/jobs,${RUN_ID},BUSINESS_DATE=${BUSINESS_DATE},,,,,,,,
+60,netting,NETTING,/rfc/jobs,${RUN_ID},BUSINESS_DATE=${BUSINESS_DATE},,,,,,,,

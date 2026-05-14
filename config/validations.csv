@@ -1,0 +1,8 @@
+stage_name,entity_name,table_name,expected_csv,key_columns,compare_columns,where_clause
+activate,financial_contract,/FSDM/A_FIN_CONTRACT,activate/financial_contract.csv,RUN_ID|CONTRACT_ID|VALID_FROM,RUN_ID|CONTRACT_ID|VALID_FROM|VALID_TO|AMOUNT|CURRENCY,RUN_ID='${RUN_ID}'
+activate,business_partner,/FSDM/A_BUS_PARTNER,activate/business_partner.csv,RUN_ID|PARTNER_ID,RUN_ID|PARTNER_ID|VALID_FROM|VALID_TO|PARTNER_TYPE,RUN_ID='${RUN_ID}'
+z30_rspc,financial_contract,/FSDM/A_FIN_CONTRACT,z30_rspc/financial_contract.csv,RUN_ID|CONTRACT_ID|VALID_FROM,RUN_ID|CONTRACT_ID|VALID_FROM|VALID_TO|AMOUNT|CURRENCY|Z30_STATUS,RUN_ID='${RUN_ID}'
+z40_rspc,financial_contract,/FSDM/A_FIN_CONTRACT,z40_rspc/financial_contract.csv,RUN_ID|CONTRACT_ID|VALID_FROM,RUN_ID|CONTRACT_ID|VALID_FROM|VALID_TO|AMOUNT|CURRENCY|Z40_STATUS,RUN_ID='${RUN_ID}'
+balance_snapshot,financial_contract,/FSDM/A_FIN_CONTRACT,balance_snapshot/financial_contract.csv,RUN_ID|CONTRACT_ID|VALID_FROM,RUN_ID|CONTRACT_ID|VALID_FROM|VALID_TO|AMOUNT|CURRENCY|SNAPSHOT_STATUS,RUN_ID='${RUN_ID}'
+gai,financial_contract,/FSDM/A_FIN_CONTRACT,gai/financial_contract.csv,RUN_ID|CONTRACT_ID|VALID_FROM,RUN_ID|CONTRACT_ID|VALID_FROM|VALID_TO|AMOUNT|CURRENCY|GAI_STATUS,RUN_ID='${RUN_ID}'
+netting,financial_contract,/FSDM/A_FIN_CONTRACT,netting/financial_contract.csv,RUN_ID|CONTRACT_ID|VALID_FROM,RUN_ID|CONTRACT_ID|VALID_FROM|VALID_TO|AMOUNT|CURRENCY|NETTING_STATUS,RUN_ID='${RUN_ID}'

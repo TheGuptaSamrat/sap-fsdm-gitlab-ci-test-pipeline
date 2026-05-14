@@ -1,0 +1,61 @@
+stages:
+  - static_validation
+  - unit_test
+  - integration_test
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  ENTITY_CONFIG: "config/entities.csv"
+  JOB_CONFIG: "config/jobs.csv"
+  VALIDATION_CONFIG: "config/validations.csv"
+  INPUT_DATA_DIR: "data/input"
+  EXPECTED_DATA_DIR: "data/expected"
+  RUN_ID: "$CI_PIPELINE_ID"
+  HANA_JDBC_DRIVER_CLASS: "com.sap.db.jdbc.Driver"
+  AUDIT_TABLE: "ZCI_FSDM_FLOW_AUDIT"
+  DRY_RUN: "false"
+
+cache:
+  paths:
+    - .m2/repository
+
+validate-config:
+  image: maven:3.9-eclipse-temurin-17
+  stage: static_validation
+  script:
+    - mvn -q -DskipTests package
+    - java -jar target/fsdm-ci-harness.jar validate-config --entities "$ENTITY_CONFIG" --jobs "$JOB_CONFIG" --validations "$VALIDATION_CONFIG" --input-dir "$INPUT_DATA_DIR" --expected-dir "$EXPECTED_DATA_DIR"
+
+unit-test:
+  image: maven:3.9-eclipse-temurin-17
+  stage: unit_test
+  script:
+    - mvn -q test
+
+sap-integration-flow:
+  image: maven:3.9-eclipse-temurin-17
+  stage: integration_test
+  rules:
+    - if: '$RUN_SAP_INTEGRATION == "true"'
+      when: on_success
+    - when: manual
+      allow_failure: true
+  before_script:
+    - test -n "$HANA_JDBC_URL"
+    - test -n "$HANA_USER"
+    - test -n "$HANA_PASSWORD"
+    - test -n "$RFC_HTTP_BASE_URL"
+    - |
+      if [ -n "$HANA_JDBC_DRIVER_URL" ]; then
+        curl -fsSL "$HANA_JDBC_DRIVER_URL" -o ngdbc.jar
+        export HANA_JDBC_DRIVER_JAR="$PWD/ngdbc.jar"
+      fi
+    - test -n "$HANA_JDBC_DRIVER_JAR"
+  script:
+    - mvn -q -DskipTests package
+    - java -cp "target/fsdm-ci-harness.jar:${HANA_JDBC_DRIVER_JAR}" io.github.theguptasamrat.fsdmci.App run-flow --entities "$ENTITY_CONFIG" --jobs "$JOB_CONFIG" --validations "$VALIDATION_CONFIG" --input-dir "$INPUT_DATA_DIR" --expected-dir "$EXPECTED_DATA_DIR"
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - target/*.jar

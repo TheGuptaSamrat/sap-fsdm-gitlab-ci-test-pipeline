@@ -1,0 +1,11 @@
+target/
+.idea/
+.vscode/
+*.iml
+*.log
+*.tmp
+.DS_Store
+ngdbc.jar
+drivers/
+secrets/
+data/private/
